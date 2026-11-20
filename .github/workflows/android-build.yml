@@ -121,6 +121,8 @@ jobs:
         shell: bash
         run: |
           tmp="$(mktemp -d)"
+          # Gradle 9 needs a settings file in the directory, otherwise "does not contain a Gradle build".
+          touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
           mkdir -p gradle/wrapper
           cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
@@ -186,6 +188,8 @@ jobs:
         shell: bash
         run: |
           tmp="$(mktemp -d)"
+          # Gradle 9 needs a settings file in the directory, otherwise "does not contain a Gradle build".
+          touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
           mkdir -p gradle/wrapper
           cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
