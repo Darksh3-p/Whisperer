@@ -51,13 +51,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK packages (platform, build-tools, NDK, CMake)  # SDK is preinstalled on the runner
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages (platform, build-tools, NDK, CMake)
         shell: bash
         run: |
-          SDKM="$(command -v sdkmanager || ls "${ANDROID_HOME:-/usr/local/lib/android/sdk}"/cmdline-tools/*/bin/sdkmanager | tail -1)"
-          echo "sdkmanager: $SDKM"
-          yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
 
       # ---- native sources -------------------------------------------------------------------
       - name: Fetch llama.cpp (${{ env.LLAMA_REF }})
@@ -105,27 +106,20 @@ jobs:
           rm -rf sherpa_dl sherpa_src
 
       # ---- gradle wrapper -------------------------------------------------------------------
-      - name: Provide Gradle CLI (only needed to create missing wrapper files)
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
+      - name: Provide Gradle CLI (only needed to create a missing wrapper JAR)
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.1"
 
-      - name: Create Gradle wrapper files if missing
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
+      - name: Create Gradle wrapper JAR if it is missing
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
         shell: bash
         run: |
           tmp="$(mktemp -d)"
-          # Gradle 9 refuses to run in a directory without a settings/build file
-          touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
-          # Copy only what is missing; never overwrite files that are already committed.
           mkdir -p gradle/wrapper
-          cp -n "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
-          cp -n "$tmp/gradle/wrapper/gradle-wrapper.properties" gradle/wrapper/gradle-wrapper.properties
-          cp -n "$tmp/gradlew" gradlew
-          cp -n "$tmp/gradlew.bat" gradlew.bat
-          chmod +x ./gradlew
+          cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
 
       - name: Validate Gradle wrapper
         shell: bash
@@ -167,34 +161,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android SDK packages
         shell: bash
-        run: |
-          SDKM="$(command -v sdkmanager || ls "${ANDROID_HOME:-/usr/local/lib/android/sdk}"/cmdline-tools/*/bin/sdkmanager | tail -1)"
-          echo "sdkmanager: $SDKM"
-          yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platforms;android-36" "build-tools;36.0.0"
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Provide Gradle CLI (only needed to create missing wrapper files)
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
+      - name: Provide Gradle CLI (only needed to create a missing wrapper JAR)
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.1"
 
-      - name: Create Gradle wrapper files if missing
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
+      - name: Create Gradle wrapper JAR if it is missing
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
         shell: bash
         run: |
           tmp="$(mktemp -d)"
-          # Gradle 9 refuses to run in a directory without a settings/build file
-          touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
-          # Copy only what is missing; never overwrite files that are already committed.
           mkdir -p gradle/wrapper
-          cp -n "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
-          cp -n "$tmp/gradle/wrapper/gradle-wrapper.properties" gradle/wrapper/gradle-wrapper.properties
-          cp -n "$tmp/gradlew" gradlew
-          cp -n "$tmp/gradlew.bat" gradlew.bat
+          cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
           chmod +x ./gradlew
 
       - name: Make wrapper executable
