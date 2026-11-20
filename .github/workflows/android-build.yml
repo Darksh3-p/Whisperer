@@ -105,22 +105,27 @@ jobs:
           rm -rf sherpa_dl sherpa_src
 
       # ---- gradle wrapper -------------------------------------------------------------------
-      - name: Provide Gradle CLI (only needed to create a missing wrapper JAR)
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
+      - name: Provide Gradle CLI (only needed to create missing wrapper files)
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.1"
 
-      - name: Create Gradle wrapper JAR if it is missing
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
+      - name: Create Gradle wrapper files if missing
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
         shell: bash
         run: |
           tmp="$(mktemp -d)"
           # Gradle 9 refuses to run in a directory without a settings/build file
           touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
+          # Copy only what is missing; never overwrite files that are already committed.
           mkdir -p gradle/wrapper
-          cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
+          cp -n "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
+          cp -n "$tmp/gradle/wrapper/gradle-wrapper.properties" gradle/wrapper/gradle-wrapper.properties
+          cp -n "$tmp/gradlew" gradlew
+          cp -n "$tmp/gradlew.bat" gradlew.bat
+          chmod +x ./gradlew
 
       - name: Validate Gradle wrapper
         shell: bash
@@ -170,22 +175,26 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Provide Gradle CLI (only needed to create a missing wrapper JAR)
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
+      - name: Provide Gradle CLI (only needed to create missing wrapper files)
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.1"
 
-      - name: Create Gradle wrapper JAR if it is missing
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
+      - name: Create Gradle wrapper files if missing
+        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' || hashFiles('gradlew') == '' }}
         shell: bash
         run: |
           tmp="$(mktemp -d)"
           # Gradle 9 refuses to run in a directory without a settings/build file
           touch "$tmp/settings.gradle"
           (cd "$tmp" && gradle wrapper --gradle-version 9.6.1 --distribution-type bin --no-daemon)
+          # Copy only what is missing; never overwrite files that are already committed.
           mkdir -p gradle/wrapper
-          cp "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
+          cp -n "$tmp/gradle/wrapper/gradle-wrapper.jar" gradle/wrapper/gradle-wrapper.jar
+          cp -n "$tmp/gradle/wrapper/gradle-wrapper.properties" gradle/wrapper/gradle-wrapper.properties
+          cp -n "$tmp/gradlew" gradlew
+          cp -n "$tmp/gradlew.bat" gradlew.bat
           chmod +x ./gradlew
 
       - name: Make wrapper executable
